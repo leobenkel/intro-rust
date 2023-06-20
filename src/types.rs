@@ -575,7 +575,12 @@ mod enums {
             0
         };
 
+        let JobTitle::Engineer { level: level2 } = title else {
+            panic!("...")
+        };
+
         assert_eq!(level, 3);
+        assert_eq!(level2, 3);
     }
 
     #[test]
@@ -620,10 +625,7 @@ mod enums {
         // otherwise return false.
         fn is_high_powered_thief(c: CharacterClass) -> bool {
             match c {
-                CharacterClass::Thief { power } => match power {
-                    Power::High => true,
-                    _ => false,
-                },
+                CharacterClass::Thief { power: Power::High } => true,
                 _ => false,
             }
         }
@@ -652,7 +654,7 @@ mod enums {
             // `North`.
             fn is_north(&self) -> bool {
                 match self {
-                    Direction::North => true,
+                    Self::North => true,
                     _ => false,
                 }
             }
@@ -678,12 +680,15 @@ mod generics {
         // Define a struct called `Pair` that has two type parameters, `A` and `B`,
         // and two fields, `a` and `b`, of type `A` and `B` respectively.
         #[derive(Debug, PartialEq, Eq)]
-        struct Pair {}
+        struct Pair<A, B> {
+            a: A,
+            b: B,
+        }
 
-        // let pair = Pair { a: 42, b: "foo" };
+        let pair = Pair { a: 42, b: "foo" };
 
-        assert_eq!(todo!("pair.a") as i32, 42);
-        assert_eq!(todo!("pair.a") as &str, "foo");
+        assert_eq!(pair.a, 42);
+        assert_eq!(pair.b, "foo");
     }
 
     #[test]
@@ -692,13 +697,19 @@ mod generics {
         // and two variants, `Left` and `Right`, each of which holds a value of type
         // `A` or `B` respectively.
         #[derive(Debug, PartialEq, Eq)]
-        enum Either {}
+        enum Either<A, B> {
+            Left(A),
+            Right(B),
+        }
 
-        // let left = Either::Left(42);
-        // let right = Either::Right("foo");
+        let left: Either<i32, &str> = Either::Left(42);
+        let right: Either<i32, &str> = Either::Right("foo");
 
-        assert_eq!(todo!("left") as Either, todo!("Either::Left(42)"));
-        assert_eq!(todo!("right") as Either, todo!("Either::Right(\"foo\")"));
+        // with this line, no need to explicitly have the types above.
+        assert_ne!(left, right);
+
+        assert_eq!(left, Either::Left(42));
+        assert_eq!(right, Either::Right("foo"));
     }
 }
 
@@ -711,7 +722,7 @@ mod standard {
     #[test]
     fn string_type() {
         // Create a `String` from a string literal.
-        let s: String = todo!("\"Hello, world!\"");
+        let s: String = "Hello, world!".to_owned();
 
         assert_eq!(s, "Hello, world!".to_owned());
     }
@@ -721,13 +732,13 @@ mod standard {
         // Create a read-only substring from the following string slice.
         let s: &str = "Hello, world!";
 
-        assert_eq!(todo!("&s[0..5]") as &str, "Hello");
+        assert_eq!(&s[0..5], "Hello");
     }
 
     #[test]
     fn vector_type() {
         // Create a `Vec<i32>` from a list of numbers.
-        let v: Vec<i32> = todo!("vec![1, 2, 3]");
+        let v: Vec<i32> = vec![1, 2, 3];
 
         assert_eq!(v, vec![1, 2, 3]);
     }
@@ -737,7 +748,7 @@ mod standard {
         // Create a read-only slice from the following vector.
         let v: Vec<i32> = vec![1, 2, 3];
 
-        assert_eq!(todo!("&v[0..2]") as &[i32], &[1, 2]);
+        assert_eq!(&v[0..2], &[1, 2]);
     }
 
     #[test]
@@ -747,7 +758,9 @@ mod standard {
 
         // Define the map with a vec of tuples, and then using `into_iter().collect`,
         // convert the vec into a HashMap.
-        let mut map: HashMap<&str, i32> = todo!("vec![...]");
+        let map: HashMap<&str, i32> = vec![("foo", 42), ("bar", 43), ("baz", 44)]
+            .into_iter()
+            .collect();
 
         assert_eq!(map.get("foo"), Some(&42));
         assert_eq!(map.get("bar"), Some(&43));
