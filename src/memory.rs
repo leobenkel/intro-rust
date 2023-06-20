@@ -40,10 +40,7 @@ mod stack {
             }
         }
 
-        assert_eq!(
-            grow_stack(10),
-            todo!("What is the size of the stack?") as i32
-        );
+        assert_eq!(grow_stack(10), 40);
     }
 
     #[test]
