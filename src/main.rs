@@ -3,6 +3,7 @@ mod concurrency;
 mod errors;
 mod fundamentals;
 mod iterators;
+mod linked_list;
 mod memory;
 mod traits;
 mod types;
