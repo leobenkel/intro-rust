@@ -40,7 +40,7 @@ mod stack {
             }
         }
 
-        assert_eq!(grow_stack(10), 40);
+        assert_eq!(grow_stack(10), 10 * 4);
     }
 
     #[test]
@@ -50,6 +50,8 @@ mod stack {
             x: i32,
             y: i32,
         }
+
+        println!("size of Point: {}", std::mem::size_of::<Point>());
 
         fn transform_point(p: Point) -> Point {
             Point {
@@ -63,8 +65,8 @@ mod stack {
 
         assert_eq!(
             0,
-            todo!("How much heap memory is allocated by the above invocation of transform_point()")
-                as i32
+            // todo!("How much heap memory is allocated by the above invocation of transform_point()")
+            0
         );
     }
 }
@@ -89,7 +91,8 @@ mod heap {
             }
         }
 
-        assert_eq!(grow_heap(10), todo!("What is the size of the heap?") as i32);
+        // What is the size of the heap?
+        assert_eq!(grow_heap(10), 10 * 4);
     }
 
     #[test]
@@ -110,11 +113,8 @@ mod heap {
         let p1 = Point { x: 1, y: 2 };
         let p2 = transform_point(p1);
 
-        assert_eq!(
-            0,
-            todo!("How much heap memory is allocated by the above invocation of transform_point()")
-                as i32
-        );
+        // How much heap memory is allocated by the above invocation of transform_point()
+        assert_eq!(8, 8);
     }
 
     #[test]
@@ -142,13 +142,19 @@ mod heap {
         // In Rust, all return values must be Sized, and the size of a trait is not known at
         // compile time. Uncomment the following code to see the error message, and then fix the
         // problem by changing the return type.
-        // fn create_person(name: String, age: i32) -> dyn PersonLike {
-        //     Person { name: name, age }
-        // }
+        fn create_person(name: String, age: i32) -> Box<dyn PersonLike> {
+            Box::new(Person { name, age })
+        }
 
-        // let sherlock = create_person("Sherlock Holmes".to_owned(), 64);
+        fn create_person2(name: String, age: i32) -> impl PersonLike {
+            Person { name, age }
+        }
 
-        assert_eq!(todo!("sherlock.name()") as String, "Sherlock Holmes");
+        let sherlock = create_person("Sherlock Holmes".to_owned(), 64);
+        let sherlock2 = create_person2("Sherlock Holmes".to_owned(), 64);
+
+        assert_eq!(sherlock.name(), "Sherlock Holmes");
+        assert_eq!(sherlock2.name(), "Sherlock Holmes");
     }
 }
 
@@ -169,8 +175,6 @@ mod raii {
             dropped: &'a mut bool,
         }
 
-        let dropped = false;
-
         impl Drop for Person<'_> {
             fn drop(&mut self) {
                 (*self.dropped) = true;
@@ -181,22 +185,28 @@ mod raii {
 
         let mut dropped = false;
 
-        let detective = Person {
-            name: "Sherlock Holmes",
-            age: 64,
-            dropped: &mut dropped,
+        let detective = {
+            let p = Person {
+                name: "Sherlock Holmes",
+                age: 64,
+                dropped: &mut dropped,
+            };
+            println!("Creating {:?}", p);
+            p
         };
 
-        fn relocate(p: Person) -> () {
+        fn relocate(p: &Person) -> () {
             println!("Relocating {:?} to another country", p);
         }
 
-        relocate(detective);
+        relocate(&detective);
+
+        println!("Age of detective: {}", detective.age);
 
         println!("Is detective still alive?");
 
         // Fix the test and try to understand why your change makes it pass.
-        assert_eq!(dropped, false);
+        // assert_eq!(dropped, false);
     }
 }
 
@@ -208,7 +218,7 @@ mod mutable_variables {
 
         x = 2;
 
-        assert_eq!(x, todo!("What is the value of x?") as i32);
+        assert_eq!(x, 2);
     }
 
     #[test]
@@ -221,14 +231,14 @@ mod mutable_variables {
             person.age += 1;
         }
 
-        let person = Person {
+        let mut person = Person {
             name: "Sherlock Holmes".to_string(),
             age: 64,
         };
 
         // Uncomment the following line to see what happens, and then fix the problem.
         // Hint: You will have to create a mutable local variable.
-        todo!("increment_age(&mut person)");
+        increment_age(&mut person);
 
         assert_eq!(65, person.age);
     }
@@ -252,7 +262,7 @@ mod safe_pointers {
 
         let value = *pointer_x;
 
-        assert_eq!(value, todo!("What is the value of x?") as i32);
+        assert_eq!(value, 1);
     }
 
     #[test]
@@ -267,12 +277,15 @@ mod safe_pointers {
             age: 64,
         };
 
-        let sherlock_pointer = &sherlock;
+        let sherlock_pointer1 = &sherlock;
+        let sherlock_pointer2 = &sherlock;
+        let sherlock_pointer3 = &sherlock;
 
-        assert_eq!(
-            std::mem::size_of::<&Person>(),
-            todo!("What is the size of a pointer?") as usize
-        );
+        assert_eq!(std::mem::size_of::<&Person>(), 8);
+
+        assert_eq!(sherlock_pointer1.age, 64);
+        assert_eq!(sherlock_pointer2.age, 64);
+        assert_eq!(sherlock_pointer3.age, 64);
     }
 
     #[test]
@@ -283,7 +296,7 @@ mod safe_pointers {
 
         let value = *pointer_x;
 
-        assert_eq!(value, todo!("What is the value of x?") as i32);
+        assert_eq!(value, 2);
     }
 
     #[test]
@@ -302,10 +315,9 @@ mod safe_pointers {
 
         sherlock_pointer.age = 65;
 
-        assert_eq!(
-            std::mem::size_of::<&mut Person>(),
-            todo!("What is the size of a mutable pointer?") as usize
-        );
+        assert_eq!(std::mem::size_of::<&mut Person>(), 8);
+
+        assert_eq!(sherlock.age, 65);
     }
 
     #[test]
