@@ -22,7 +22,11 @@ mod threads {
 
     #[test]
     fn spawn_join_thread() {
-        let thread: JoinHandle<i32> = todo!("Spawn a thread that returns 42");
+        let thread: JoinHandle<i32> = std::thread::spawn(|| {
+            println!("Hello from thread!");
+
+            42
+        });
 
         let result = thread.join().unwrap();
 
@@ -43,7 +47,8 @@ mod threads {
             43
         });
 
-        let sum: i32 = todo!("Join the threads and sum their results");
+        // Join the threads and sum their results
+        let sum: i32 = thread1.join().unwrap() + thread2.join().unwrap();
 
         assert_eq!(sum, 85);
     }
@@ -52,10 +57,10 @@ mod threads {
     fn move_closure_in_spawn() {
         let user_ids = vec![1, 2, 3];
 
-        let compute_min_thread = std::thread::spawn(|| {
+        let compute_min_thread = std::thread::spawn(move || {
             // Explain why this code doesn't compile and use the `move` keyword to fix it. Then see if
             // you can achieve the same result without using `move`.
-            todo!("*user_ids.iter().min().unwrap()") as i32
+            *user_ids.iter().min().unwrap()
         });
 
         let min = compute_min_thread.join().unwrap();
@@ -95,16 +100,22 @@ mod sharing_data {
         let shared_database = Arc::new(detectives);
 
         let thread1 = std::thread::spawn({
+            let shared_database = shared_database.clone();
             move || {
-                todo!("Get Sherlock from the shared database, and print and return his age") as i32
+                // Get Sherlock from the shared database, and print and return his age
+                let age = (*shared_database)[0].age;
+                println!("Sherlock's age {}", age);
+                age
             }
         });
 
         let thread2 = std::thread::spawn({
             let shared_database = shared_database.clone();
-
             move || {
-                todo!("Get Poirot from the shared database, and print and return his age") as i32
+                // Get Poirot from the shared database, and print and return his age
+                let age = (*shared_database)[1].age;
+                println!("Hercule's age {}", age);
+                age
             }
         });
 
@@ -138,13 +149,15 @@ mod sharing_data {
             },
         }));
 
-        let thread_sherlock = sherlock.clone();
+        let thread = std::thread::spawn({
+            let thread_sherlock = sherlock.clone();
 
-        let thread = std::thread::spawn(move || {
-            // Using `thread_sherlock`, obtain a lock on `Person`, and change the city to "New York".
-            todo!("Change Sherlock's city to New York");
+            move || {
+                // Using `thread_sherlock`, obtain a lock on `Person`, and change the city to "New York".
+                thread_sherlock.lock().unwrap().address.city = "New York".to_string();
 
-            println!("Sherlock moved to New York!");
+                println!("Sherlock moved to New York!");
+            }
         });
 
         thread.join().unwrap();
