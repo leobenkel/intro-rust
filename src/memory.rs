@@ -844,8 +844,8 @@ mod lifetimes {
         /// Refactor this from using 'static lifetime for the name to using a lifetime parameter,
         /// called `'a`, and ensure the code still compiles and passes.
         #[derive(Debug, PartialEq)]
-        struct Person {
-            name: &'static str,
+        struct Person<'a> {
+            name: &'a str,
             age: i32,
         }
 
