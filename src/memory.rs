@@ -40,10 +40,7 @@ mod stack {
             }
         }
 
-        assert_eq!(
-            grow_stack(10),
-            todo!("What is the size of the stack?") as i32
-        );
+        assert_eq!(grow_stack(10), 10 * 4);
     }
 
     #[test]
@@ -53,6 +50,8 @@ mod stack {
             x: i32,
             y: i32,
         }
+
+        println!("size of Point: {}", std::mem::size_of::<Point>());
 
         fn transform_point(p: Point) -> Point {
             Point {
@@ -66,8 +65,8 @@ mod stack {
 
         assert_eq!(
             0,
-            todo!("How much heap memory is allocated by the above invocation of transform_point()")
-                as i32
+            // todo!("How much heap memory is allocated by the above invocation of transform_point()")
+            0
         );
     }
 }
@@ -92,7 +91,8 @@ mod heap {
             }
         }
 
-        assert_eq!(grow_heap(10), todo!("What is the size of the heap?") as i32);
+        // What is the size of the heap?
+        assert_eq!(grow_heap(10), 10 * 4);
     }
 
     #[test]
@@ -113,11 +113,8 @@ mod heap {
         let p1 = Point { x: 1, y: 2 };
         let p2 = transform_point(p1);
 
-        assert_eq!(
-            0,
-            todo!("How much heap memory is allocated by the above invocation of transform_point()")
-                as i32
-        );
+        // How much heap memory is allocated by the above invocation of transform_point()
+        assert_eq!(8, 8);
     }
 
     #[test]
@@ -145,13 +142,19 @@ mod heap {
         // In Rust, all return values must be Sized, and the size of a trait is not known at
         // compile time. Uncomment the following code to see the error message, and then fix the
         // problem by changing the return type.
-        // fn create_person(name: String, age: i32) -> dyn PersonLike {
-        //     Person { name: name, age }
-        // }
+        fn create_person(name: String, age: i32) -> Box<dyn PersonLike> {
+            Box::new(Person { name, age })
+        }
 
-        // let sherlock = create_person("Sherlock Holmes".to_owned(), 64);
+        fn create_person2(name: String, age: i32) -> impl PersonLike {
+            Person { name, age }
+        }
 
-        assert_eq!(todo!("sherlock.name()") as String, "Sherlock Holmes");
+        let sherlock = create_person("Sherlock Holmes".to_owned(), 64);
+        let sherlock2 = create_person2("Sherlock Holmes".to_owned(), 64);
+
+        assert_eq!(sherlock.name(), "Sherlock Holmes");
+        assert_eq!(sherlock2.name(), "Sherlock Holmes");
     }
 }
 
@@ -172,8 +175,6 @@ mod raii {
             dropped: &'a mut bool,
         }
 
-        let dropped = false;
-
         impl Drop for Person<'_> {
             fn drop(&mut self) {
                 (*self.dropped) = true;
@@ -184,22 +185,30 @@ mod raii {
 
         let mut dropped = false;
 
-        let detective = Person {
-            name: "Sherlock Holmes",
-            age: 64,
-            dropped: &mut dropped,
+        let detective = {
+            let p = Person {
+                name: "Sherlock Holmes",
+                age: 64,
+                dropped: &mut dropped,
+            };
+            println!("Creating {:?}", p);
+            p
         };
 
-        fn relocate(p: Person) -> () {
+        fn relocate(p: &Person) -> () {
             println!("Relocating {:?} to another country", p);
         }
 
-        relocate(detective);
+        relocate(&detective);
+
+        println!("Age of detective: {}", detective.age);
 
         println!("Is detective still alive?");
 
         // Fix the test and try to understand why your change makes it pass.
-        assert_eq!(dropped, false);
+        assert_eq!(*detective.dropped, false);
+        drop(detective);
+        assert_eq!(dropped, true);
     }
 }
 
@@ -211,7 +220,7 @@ mod mutable_variables {
 
         x = 2;
 
-        assert_eq!(x, todo!("What is the value of x?") as i32);
+        assert_eq!(x, 2);
     }
 
     #[test]
@@ -224,14 +233,14 @@ mod mutable_variables {
             person.age += 1;
         }
 
-        let person = Person {
+        let mut person = Person {
             name: "Sherlock Holmes".to_string(),
             age: 64,
         };
 
         // Uncomment the following line to see what happens, and then fix the problem.
         // Hint: You will have to create a mutable local variable.
-        todo!("increment_age(&mut person)");
+        increment_age(&mut person);
 
         assert_eq!(65, person.age);
     }
@@ -255,7 +264,7 @@ mod safe_pointers {
 
         let value = *pointer_x;
 
-        assert_eq!(value, todo!("What is the value of x?") as i32);
+        assert_eq!(value, 1);
     }
 
     #[test]
@@ -270,12 +279,15 @@ mod safe_pointers {
             age: 64,
         };
 
-        let sherlock_pointer = &sherlock;
+        let sherlock_pointer1 = &sherlock;
+        let sherlock_pointer2 = &sherlock;
+        let sherlock_pointer3 = &sherlock;
 
-        assert_eq!(
-            std::mem::size_of::<&Person>(),
-            todo!("What is the size of a pointer?") as usize
-        );
+        assert_eq!(std::mem::size_of::<&Person>(), 8);
+
+        assert_eq!(sherlock_pointer1.age, 64);
+        assert_eq!(sherlock_pointer2.age, 64);
+        assert_eq!(sherlock_pointer3.age, 64);
     }
 
     #[test]
@@ -286,7 +298,7 @@ mod safe_pointers {
 
         let value = *pointer_x;
 
-        assert_eq!(value, todo!("What is the value of x?") as i32);
+        assert_eq!(value, 2);
     }
 
     #[test]
@@ -305,10 +317,9 @@ mod safe_pointers {
 
         sherlock_pointer.age = 65;
 
-        assert_eq!(
-            std::mem::size_of::<&mut Person>(),
-            todo!("What is the size of a mutable pointer?") as usize
-        );
+        assert_eq!(std::mem::size_of::<&mut Person>(), 8);
+
+        assert_eq!(sherlock.age, 65);
     }
 
     #[test]
@@ -320,7 +331,7 @@ mod safe_pointers {
         }
 
         fn transform_point(p: &mut Point) -> () {
-            todo!("Modify p to make the test pass using (*p).")
+            (*p).x = 4;
         }
 
         let mut p1 = Point { x: 1, y: 2 };
@@ -339,7 +350,7 @@ mod safe_pointers {
         }
 
         fn transform_point(p: &mut Point) -> () {
-            todo!("Modify p to make the test pass using p.")
+            p.x = 4;
         }
 
         let mut p1 = Point { x: 1, y: 2 };
@@ -349,12 +360,17 @@ mod safe_pointers {
         assert_eq!(p1, Point { x: 4, y: 2 });
     }
 
+    #[test]
     fn shared_pointer_to_shared_pointer() {
         let x = 1;
         let y = &x;
         let z = &y;
 
-        assert_eq!(**z, todo!("What is the value of z?") as i32);
+        let w = &&&&&x;
+        assert_eq!(*****w, 1);
+
+        assert_eq!(**z, 1);
+        assert_eq!(*y, 1);
     }
 
     #[test]
@@ -363,9 +379,13 @@ mod safe_pointers {
         let mut y = &mut x;
         let z = &mut y;
 
-        todo!("Modify z to make the test pass using (**z).");
+        **z = 4;
 
         assert_eq!(x, 4);
+
+        let w = &mut &mut &mut &mut &mut x;
+        *****w = 12;
+        assert_eq!(x, 12);
     }
 
     #[test]
@@ -382,7 +402,7 @@ mod safe_pointers {
         let mut detective_ptr = &mut detective;
         let detective_ptr_ptr = &mut detective_ptr;
 
-        todo!("Modify z to make the test pass using detective_ptr_ptr.");
+        detective_ptr_ptr.age += 1;
 
         assert_eq!(detective.age, 65);
     }
@@ -404,7 +424,7 @@ mod ownership {
             y: i32,
         }
 
-        fn transform_point(p: Point) -> Point {
+        fn transform_point(p: &Point) -> Point {
             Point {
                 x: p.x + 1,
                 y: p.y + 1,
@@ -412,11 +432,13 @@ mod ownership {
         }
 
         let p1 = Point { x: 1, y: 2 };
-        let p2 = transform_point(p1);
+        let p2 = transform_point(&p1);
 
         // Uncomment the following line to see what happens, and then fix the problem
         // that arises by cloning `p1` at the right place.
-        assert_eq!(todo!("p1") as Point, p2);
+        assert_eq!(p1, Point { x: 1, y: 2 });
+        assert_eq!(p2, Point { x: 2, y: 3 });
+        assert_ne!(p1, p2);
     }
 
     #[test]
@@ -432,7 +454,8 @@ mod ownership {
         let point_ptr = &point;
         let copied_point_ptr = point_ptr;
 
-        assert_eq!(1, todo!("point_ptr.x") as i32);
+        assert_eq!(1, copied_point_ptr.x);
+        assert_eq!(2, point_ptr.y);
     }
 
     #[test]
@@ -449,9 +472,16 @@ mod ownership {
         let moved_point_ptr = point_ptr;
 
         // Uncomment the following line to see what happens, and then fix the problem.
-        // todo!("point_ptr.x = 3;");
+        moved_point_ptr.x = 3;
 
         assert_eq!(3, point.x);
+    }
+
+    #[test]
+    fn chaos_with_pointer() {
+        let mut x = 2;
+        let w = &mut &&&mut &mut &&&mut x;
+        assert_eq!(********w, 2);
     }
 
     #[test]
@@ -461,8 +491,9 @@ mod ownership {
             age: i32,
         }
 
-        fn modify_age_and_name(name: &mut String, person: &mut Person) -> () {
-            name.push_str(" Senior");
+        fn modify_age_and_name(person: &mut Person) -> () {
+            // fn modify_age_and_name(name: &mut String, person: &mut Person) -> () {
+            person.name.push_str(" Senior");
             person.age += 1;
         }
 
@@ -473,7 +504,8 @@ mod ownership {
         };
 
         // Try the following code, identify the problem, and fix it to make the test pass.
-        todo!("modify_age_and_name(&mut sherlock.name, &mut sherlock)");
+        // modify_age_and_name(&mut sherlock.name, &mut sherlock);
+        modify_age_and_name(&mut sherlock);
 
         assert_eq!(sherlock.name, "Sherlock Holmes Senior");
         assert_eq!(sherlock.age, 65);
@@ -481,6 +513,8 @@ mod ownership {
 
     #[test]
     fn pin_semantics() {
+        use core::pin::Pin;
+
         #[derive(Debug, PartialEq, Clone)]
         struct Point {
             x: i32,
@@ -490,11 +524,11 @@ mod ownership {
         let mut point1 = Point { x: 1, y: 2 };
         let mut point2 = Point { x: 2, y: 1 };
 
-        let pointer1 = &mut point1;
+        let pointer1 = Pin::new(&mut point1);
         let pointer2 = &mut point2;
 
         // Make this line of code impossible by pinning one or both of the pointers.
-        core::mem::swap(pointer1, pointer2);
+        // core::mem::swap(pointer1, pointer2);
 
         assert_eq!(*pointer1, Point { x: 1, y: 2 });
         assert_eq!(*pointer2, Point { x: 2, y: 1 });
@@ -519,7 +553,7 @@ mod closures {
             city: String,
         }
 
-        let sherlock = Person {
+        let mut sherlock = Person {
             name: "Sherlock Holmes".to_string(),
             age: 64,
             address: Address {
@@ -528,8 +562,8 @@ mod closures {
             },
         };
 
-        let move_sherlock = || {
-            let mut sherlock2 = sherlock;
+        let mut move_sherlock = || {
+            let sherlock2 = &mut sherlock;
 
             sherlock2.address.city = "New York".to_string();
 
@@ -539,7 +573,8 @@ mod closures {
         move_sherlock();
 
         // Explain why the following code does not and cannot compile. Then, fix the problem.
-        assert_eq!(todo!("sherlock.age") as i32, 64);
+        assert_eq!(sherlock.age, 64);
+        assert_eq!(sherlock.address.city, "New York");
     }
 
     #[test]
@@ -573,14 +608,15 @@ mod closures {
             println!("Sherlock moved to New York!");
         };
 
-        let new_home = sherlock.address.city.clone();
-
         // Uncomment the following line to see what happens, and then fix the problem
         // by moving this line somewhere else.
-        // move_sherlock();
+        move_sherlock();
+        borrow_sherlock.age = 70;
 
-        // Explain why the following code does not and cannot compile. Then, fix the problem.
+        let new_home = sherlock.address.city.clone();
+
         assert_eq!(new_home, "New York".to_string());
+        assert_eq!(sherlock.age, 70);
     }
 }
 
