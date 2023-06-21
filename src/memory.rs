@@ -870,7 +870,24 @@ mod lifetimes {
         }
 
         fn advance<'a>(iterator: &mut TreeIterator<'a, i32>) -> Option<&'a i32> {
-            todo!("Implement advance for TreeIterator")
+            // return the next int contained in the iterator:
+            match iterator.current {
+                Some(Tree::Leaf(x)) => {
+                    iterator.current = None;
+                    Some(x)
+                }
+                Some(Tree::Branch(left, right)) => {
+                    iterator.current = Some(left);
+                    iterator.todo.push(right);
+                    advance(iterator)
+                }
+                None => {
+                    iterator.todo.pop().map(|tree| {
+                        iterator.current = Some(tree);
+                        advance(iterator)
+                    })?
+                },
+            }
         }
 
         let tree = Tree::Branch(
@@ -890,5 +907,7 @@ mod lifetimes {
         assert_eq!(advance(&mut iterator), Some(&2));
         assert_eq!(advance(&mut iterator), Some(&3));
         assert_eq!(advance(&mut iterator), None);
+        assert_eq!(advance(&mut TreeIterator { current: None, todo: Vec::new() }), None);
+        assert_eq!(advance(&mut TreeIterator { current: Some(&Tree::Leaf(2)),  todo: Vec::new() }), Some(&2));
     }
 }
