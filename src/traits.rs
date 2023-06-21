@@ -31,10 +31,19 @@ mod basics {
             name: &'static str,
         }
 
+        impl Animal for Human {
+            fn name(&self) -> &'static str {
+                self.name
+            }
+            fn talk(&self) {
+                println!("{} says hello", self.name());
+            }
+        }
+
         // Implement the Animal trait for Human so the test can be made to pass:
         let sherlock = Human { name: "Sherlock" };
 
-        assert_eq!(todo!("sherlock.name()") as &str, "Sherlock");
+        assert_eq!(sherlock.name(), "Sherlock");
     }
 
     #[test]
@@ -48,10 +57,15 @@ mod basics {
         }
 
         // Implement the Hopper trait for Rabbit:
+        impl Hopper for Rabbit {
+            fn hop(&self) {
+                println!("{} is hopping", self.name);
+            }
+        }
 
         // Add a trait bound to the hop function so the test can be made to pass:
-        fn hop<T>(hopper: T) {
-            todo!("hopper.hop()");
+        fn hop<T: Hopper>(hopper: T) {
+            hopper.hop();
         }
 
         let rabbit = Rabbit { name: "Rabbit" };
@@ -76,8 +90,11 @@ mod basics {
         }
 
         // Use a where clause to add a trait bound to the hop function:
-        fn hop<T>(hopper: T) {
-            todo!("hopper.hop()");
+        fn hop<T>(hopper: T)
+        where
+            T: Hopper,
+        {
+            hopper.hop();
         }
 
         let rabbit = Rabbit { name: "Rabbit" };
@@ -110,8 +127,9 @@ mod basics {
         }
 
         // Use a composite trait bound so you can make the animal hop and swim:
-        fn hop_and_swim<T>(animal: T) {
-            todo!("animal.hop(); animal.swim()");
+        fn hop_and_swim<T : Hopper + Swimmer>(animal: T) {
+          animal.hop();
+          animal.swim();
         }
 
         let duck = Duck { name: "Duck" };
