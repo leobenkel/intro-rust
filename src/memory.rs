@@ -206,7 +206,9 @@ mod raii {
         println!("Is detective still alive?");
 
         // Fix the test and try to understand why your change makes it pass.
-        // assert_eq!(dropped, false);
+        assert_eq!(*detective.dropped, false);
+        drop(detective);
+        assert_eq!(dropped, true);
     }
 }
 
