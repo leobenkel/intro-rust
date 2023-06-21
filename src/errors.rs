@@ -27,7 +27,10 @@ mod option {
         // Option is an enum with two constructors: Some and None.
         // Use this enum to implement the divide function so the test can be made to pass:
         fn divide(numerator: f64, denominator: f64) -> Option<f64> {
-            todo!("don't allow division by zero");
+            match denominator {
+                n if n == 0f64 => None,
+                _ => Some(numerator / denominator),
+            }
         }
 
         assert_eq!(divide(4.0, 2.0), Some(2.0));
@@ -49,7 +52,7 @@ mod option {
         }
 
         // Use the unwrap method to either unwrap the Option or panic:
-        assert_eq!(todo!("divide(4.0, 2.0)") as f64, 2.0);
+        assert_eq!(divide(4.0, 2.0).unwrap(), 2.0);
     }
 
     #[test]
@@ -164,7 +167,10 @@ mod result {
         // Result is an enum with two constructors: Ok and Err.
         // Use this enum to implement the divide function so the test can be made to pass:
         fn divide(numerator: f64, denominator: f64) -> Result<f64, &'static str> {
-            todo!("don't allow division by zero");
+            match denominator {
+                n if n == 0f64 => Err("division by zero"),
+                _ => Ok(numerator / denominator),
+            }
         }
 
         assert_eq!(divide(4.0, 2.0), Ok(2.0));
@@ -186,7 +192,7 @@ mod result {
         }
 
         // Use the unwrap method to either unwrap the Result or panic:
-        assert_eq!(todo!("divide(4.0, 2.0)") as f64, 2.0);
+        assert_eq!(divide(4.0, 2.0).unwrap(), 2.0);
     }
 
     #[test]
@@ -204,8 +210,8 @@ mod result {
         }
 
         // Use the unwrap_or method to either unwrap the Result or return a default value:
-        assert_eq!(todo!("divide(4.0, 2.0)") as f64, 2.0);
-        assert_eq!(todo!("divide(5.0, 0.0)") as f64, 0.0);
+        assert_eq!(divide(4.0, 2.0).unwrap(), 2.0);
+        assert_eq!(divide(5.0, 0.0).unwrap_or(0.0), 0.0);
     }
 
     #[test]
@@ -224,8 +230,8 @@ mod result {
         }
 
         // Use the unwrap_or_else method to either unwrap the Result or return a default value:
-        assert_eq!(todo!("divide(4.0, 2.0)") as f64, 2.0);
-        assert_eq!(todo!("divide(5.0, 0.0)") as f64, 0.0);
+        assert_eq!(divide(4.0, 2.0).unwrap_or_else(|_| 0.0), 2.0);
+        assert_eq!(divide(5.0, 0.0).unwrap_or_else(|_| 0.0), 0.0);
     }
 
     #[test]
@@ -245,10 +251,10 @@ mod result {
 
         fn divide_render(numerator: f64, denominator: f64) -> Result<String, &'static str> {
             // Use the map method to either transform the Result or return Err:
-            todo!("don't allow division by zero");
+            divide(numerator, denominator).map(|result| result.to_string())
         }
 
-        assert_eq!(divide_render(4.0, 2.0), Ok("2.0".to_string()));
+        assert_eq!(divide_render(4.0, 2.0), Ok("2".to_string()));
         assert_eq!(divide_render(5.0, 0.0), Err("division by zero"));
     }
 
@@ -276,7 +282,11 @@ mod result {
 
         fn decode_and_then_divide(numerator: &str, denominator: &str) -> Result<f64, &'static str> {
             // Use the map method to either transform the Result or return Err:
-            todo!("don't allow division by zero");
+            decode(numerator).and_then(|numerator| {
+                decode(denominator).and_then(|denominator| {
+                    divide(numerator as f64, denominator as f64)
+                })
+            })
         }
 
         assert_eq!(decode_and_then_divide("4", "2"), Ok(2.0));
@@ -302,11 +312,29 @@ mod result {
 
         fn decode_and_then_divide(numerator: &str, denominator: &str) -> Result<f64, &'static str> {
             // Use the ? operator to either unwrap the Result or return Err:
-            todo!("don't allow division by zero");
+            decode(numerator).and_then(|numerator| {
+                decode(denominator)
+                    .and_then(|denominator| divide(numerator as f64, denominator as f64))
+            })
+        }
+
+        fn decode_and_then_divide2(
+            numerator: &str,
+            denominator: &str,
+        ) -> Result<f64, &'static str> {
+            // Use the ? operator to either unwrap the Result or return Err:
+            let n = decode(numerator)?;
+            let d = decode(denominator)?;
+            divide(n as f64, d as f64)
         }
 
         assert_eq!(decode_and_then_divide("4", "2"), Ok(2.0));
         assert_eq!(decode_and_then_divide("4", "0"), Err("division by zero"));
+        assert_eq!(decode_and_then_divide("sdasda", "0"), Err("invalid number"));
+
+        assert_eq!(decode_and_then_divide2("4", "2"), Ok(2.0));
+        assert_eq!(decode_and_then_divide2("4", "0"), Err("division by zero"));
+        assert_eq!(decode_and_then_divide2("sdda", "0"), Err("invalid number"));
     }
 }
 

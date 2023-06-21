@@ -254,7 +254,7 @@ mod standard_traits {
             }
         }
 
-        let fmt: String =  format!("{:?}", person);
+        let fmt: String = format!("{:?}", person);
 
         assert_eq!(fmt, "Person { name: \"John\", age: 42 }");
     }
@@ -383,12 +383,24 @@ mod existential {
             duck.quack()
         }
 
+        trait Foo {}
+
+        impl Foo for Duck {}
+
+        fn make_duck_quack3(duck: impl DuckLike + Foo) -> String {
+            duck.quack()
+        }
+
         assert_eq!(
             make_duck_quack(Duck { name: "Donald" }),
             "Donald is quacking"
         );
         assert_eq!(
             make_duck_quack2(Duck { name: "Donald" }),
+            "Donald is quacking"
+        );
+        assert_eq!(
+            make_duck_quack3(Duck { name: "Donald" }),
             "Donald is quacking"
         );
     }
@@ -409,7 +421,6 @@ mod existential {
             }
         }
 
-        
         fn create_some_duck(name: &'static str) -> Duck {
             Duck { name }
         }
@@ -418,13 +429,7 @@ mod existential {
             Duck { name }
         }
 
-        assert_eq!(
-            create_some_duck( "Donald").quack(),
-            "Donald is quacking"
-        );
-        assert_eq!(
-            create_some_duck2( "Donald").quack(),
-            "Donald is quacking"
-        );
+        assert_eq!(create_some_duck("Donald").quack(), "Donald is quacking");
+        assert_eq!(create_some_duck2("Donald").quack(), "Donald is quacking");
     }
 }
