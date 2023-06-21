@@ -229,9 +229,17 @@ mod associated_types {
             amount: i32,
         }
 
+        impl Function<i32> for Add {
+            type Out = i32;
+
+            fn call(&self, input: i32) -> Self::Out {
+                input + self.amount
+            }
+        }
+
         // Implement the Function trait for Add so the test can be made to pass:
         // Note the return type of the call to `call`, which is tracked by the associated type `Out`.
-        assert_eq!(todo!("Add {{ amount: 1 }}.call(2)") as i32, 3);
+        assert_eq!(Add { amount: 1 }.call(2), 3);
     }
 }
 
