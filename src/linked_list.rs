@@ -56,6 +56,6 @@ mod test {
         list.append(4);
         list.append(5);
 
-        assert_eq!(list.to_vec(), vec![&1,&2,&3,&4,&5]);
+        assert_eq!(list.to_vec(), vec![&1, &2, &3, &4, &5]);
     }
 }
