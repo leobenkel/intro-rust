@@ -329,7 +329,7 @@ mod safe_pointers {
         }
 
         fn transform_point(p: &mut Point) -> () {
-            todo!("Modify p to make the test pass using (*p).")
+            p.x = 4;
         }
 
         let mut p1 = Point { x: 1, y: 2 };
@@ -348,7 +348,7 @@ mod safe_pointers {
         }
 
         fn transform_point(p: &mut Point) -> () {
-            todo!("Modify p to make the test pass using p.")
+            *p = Point { x: 4, y: 2 };
         }
 
         let mut p1 = Point { x: 1, y: 2 };
@@ -358,12 +358,13 @@ mod safe_pointers {
         assert_eq!(p1, Point { x: 4, y: 2 });
     }
 
+    #[test]
     fn shared_pointer_to_shared_pointer() {
         let x = 1;
         let y = &x;
         let z = &y;
 
-        assert_eq!(**z, todo!("What is the value of z?") as i32);
+        assert_eq!(**z, 1);
     }
 
     #[test]
@@ -372,7 +373,7 @@ mod safe_pointers {
         let mut y = &mut x;
         let z = &mut y;
 
-        todo!("Modify z to make the test pass using (**z).");
+        **z = 4;
 
         assert_eq!(x, 4);
     }
@@ -391,7 +392,7 @@ mod safe_pointers {
         let mut detective_ptr = &mut detective;
         let detective_ptr_ptr = &mut detective_ptr;
 
-        todo!("Modify z to make the test pass using detective_ptr_ptr.");
+        detective_ptr_ptr.age = 65;
 
         assert_eq!(detective.age, 65);
     }

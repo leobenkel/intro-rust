@@ -1,6 +1,7 @@
 mod async_await;
 mod concurrency;
 mod errors;
+mod find_range;
 mod fundamentals;
 mod iterators;
 mod linked_list;
@@ -8,7 +9,6 @@ mod memory;
 mod traits;
 mod types;
 mod welcome;
-
 use warp::Filter;
 
 /// GRADUATION PROJECT
