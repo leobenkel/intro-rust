@@ -331,7 +331,7 @@ mod safe_pointers {
         }
 
         fn transform_point(p: &mut Point) -> () {
-            p.x = 4;
+            (*p).x = 4;
         }
 
         let mut p1 = Point { x: 1, y: 2 };
@@ -350,7 +350,7 @@ mod safe_pointers {
         }
 
         fn transform_point(p: &mut Point) -> () {
-            *p = Point { x: 4, y: 2 };
+            p.x = 4;
         }
 
         let mut p1 = Point { x: 1, y: 2 };
@@ -366,7 +366,11 @@ mod safe_pointers {
         let y = &x;
         let z = &y;
 
+        let w = &&&&&x;
+        assert_eq!(*****w, 1);
+
         assert_eq!(**z, 1);
+        assert_eq!(*y, 1);
     }
 
     #[test]
@@ -378,6 +382,10 @@ mod safe_pointers {
         **z = 4;
 
         assert_eq!(x, 4);
+
+        let w = &mut &mut &mut &mut &mut x;
+        *****w = 12;
+        assert_eq!(x, 12);
     }
 
     #[test]
@@ -394,7 +402,7 @@ mod safe_pointers {
         let mut detective_ptr = &mut detective;
         let detective_ptr_ptr = &mut detective_ptr;
 
-        detective_ptr_ptr.age = 65;
+        detective_ptr_ptr.age += 1;
 
         assert_eq!(detective.age, 65);
     }
@@ -416,7 +424,7 @@ mod ownership {
             y: i32,
         }
 
-        fn transform_point(p: Point) -> Point {
+        fn transform_point(p: &Point) -> Point {
             Point {
                 x: p.x + 1,
                 y: p.y + 1,
@@ -424,11 +432,13 @@ mod ownership {
         }
 
         let p1 = Point { x: 1, y: 2 };
-        let p2 = transform_point(p1);
+        let p2 = transform_point(&p1);
 
         // Uncomment the following line to see what happens, and then fix the problem
         // that arises by cloning `p1` at the right place.
-        assert_eq!(todo!("p1") as Point, p2);
+        assert_eq!(p1, Point { x: 1, y: 2 });
+        assert_eq!(p2, Point { x: 2, y: 3 });
+        assert_ne!(p1, p2);
     }
 
     #[test]
@@ -444,7 +454,8 @@ mod ownership {
         let point_ptr = &point;
         let copied_point_ptr = point_ptr;
 
-        assert_eq!(1, todo!("point_ptr.x") as i32);
+        assert_eq!(1, copied_point_ptr.x);
+        assert_eq!(2, point_ptr.y);
     }
 
     #[test]
@@ -461,9 +472,16 @@ mod ownership {
         let moved_point_ptr = point_ptr;
 
         // Uncomment the following line to see what happens, and then fix the problem.
-        // todo!("point_ptr.x = 3;");
+        moved_point_ptr.x = 3;
 
         assert_eq!(3, point.x);
+    }
+
+    #[test]
+    fn chaos_with_pointer() {
+        let mut x = 2;
+        let w = &mut &&&mut &mut &&&mut x;
+        assert_eq!(********w, 2);
     }
 
     #[test]
@@ -473,8 +491,9 @@ mod ownership {
             age: i32,
         }
 
-        fn modify_age_and_name(name: &mut String, person: &mut Person) -> () {
-            name.push_str(" Senior");
+        fn modify_age_and_name(person: &mut Person) -> () {
+            // fn modify_age_and_name(name: &mut String, person: &mut Person) -> () {
+            person.name.push_str(" Senior");
             person.age += 1;
         }
 
@@ -485,7 +504,8 @@ mod ownership {
         };
 
         // Try the following code, identify the problem, and fix it to make the test pass.
-        todo!("modify_age_and_name(&mut sherlock.name, &mut sherlock)");
+        // modify_age_and_name(&mut sherlock.name, &mut sherlock);
+        modify_age_and_name(&mut sherlock);
 
         assert_eq!(sherlock.name, "Sherlock Holmes Senior");
         assert_eq!(sherlock.age, 65);
@@ -493,6 +513,8 @@ mod ownership {
 
     #[test]
     fn pin_semantics() {
+        use core::pin::Pin;
+
         #[derive(Debug, PartialEq, Clone)]
         struct Point {
             x: i32,
@@ -502,11 +524,11 @@ mod ownership {
         let mut point1 = Point { x: 1, y: 2 };
         let mut point2 = Point { x: 2, y: 1 };
 
-        let pointer1 = &mut point1;
+        let pointer1 = Pin::new(&mut point1);
         let pointer2 = &mut point2;
 
         // Make this line of code impossible by pinning one or both of the pointers.
-        core::mem::swap(pointer1, pointer2);
+        // core::mem::swap(pointer1, pointer2);
 
         assert_eq!(*pointer1, Point { x: 1, y: 2 });
         assert_eq!(*pointer2, Point { x: 2, y: 1 });
@@ -531,7 +553,7 @@ mod closures {
             city: String,
         }
 
-        let sherlock = Person {
+        let mut sherlock = Person {
             name: "Sherlock Holmes".to_string(),
             age: 64,
             address: Address {
@@ -540,8 +562,8 @@ mod closures {
             },
         };
 
-        let move_sherlock = || {
-            let mut sherlock2 = sherlock;
+        let mut move_sherlock = || {
+            let sherlock2 = &mut sherlock;
 
             sherlock2.address.city = "New York".to_string();
 
@@ -551,7 +573,8 @@ mod closures {
         move_sherlock();
 
         // Explain why the following code does not and cannot compile. Then, fix the problem.
-        assert_eq!(todo!("sherlock.age") as i32, 64);
+        assert_eq!(sherlock.age, 64);
+        assert_eq!(sherlock.address.city, "New York");
     }
 
     #[test]
@@ -585,14 +608,15 @@ mod closures {
             println!("Sherlock moved to New York!");
         };
 
-        let new_home = sherlock.address.city.clone();
-
         // Uncomment the following line to see what happens, and then fix the problem
         // by moving this line somewhere else.
-        // move_sherlock();
+        move_sherlock();
+        borrow_sherlock.age = 70;
 
-        // Explain why the following code does not and cannot compile. Then, fix the problem.
+        let new_home = sherlock.address.city.clone();
+
         assert_eq!(new_home, "New York".to_string());
+        assert_eq!(sherlock.age, 70);
     }
 }
 
