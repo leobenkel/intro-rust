@@ -648,10 +648,7 @@ mod wrapper_types {
 
         let sherlock_box = Box::new(sherlock);
 
-        assert_eq!(
-            size_of::<Box<Person>>(),
-            todo!("What is the size of a Box?") as usize
-        );
+        assert_eq!(size_of::<Box<Person>>(), 8 as usize);
     }
 
     /// Rc<A> is a reference-counted type that allows sharing of immutable values.
@@ -670,12 +667,14 @@ mod wrapper_types {
             age: 64,
         };
 
-        let sherlock_rc = todo!("Create a Rc to Sherlock");
+        // Create a Rc to Sherlock
+        let sherlock_rc = Rc::new(sherlock);
 
-        let pointer1 = todo!("Clone a Rc to Sherlock");
-        let pointer2 = todo!("Clone a Rc to Sherlock");
+        // Clone a Rc to Sherlock
+        let pointer1 = sherlock_rc.clone();
+        let pointer2 = sherlock_rc.clone();
 
-        assert_eq!(todo!("pointer1.age") as i32, todo!("pointer2.age") as i32);
+        assert_eq!(pointer1.age, pointer2.age);
     }
 
     /// Cell<A> is a type that allows zero-cost interior mutability for Copy types.
@@ -700,10 +699,16 @@ mod wrapper_types {
         let pointer2 = &sherlock_cell;
 
         // Use the `replace` method to change the age of Sherlock to 65, through `pointer1`:
-        let original_sherlock: Person = todo!("Create a new version of Sherlock whose page is 65");
+        let original_sherlock: Person = pointer1.replace(Person {
+            name: "Sherlock Holmes",
+            age: 65,
+        });
 
         // Use the `replace` method to change the age of Sherlock to 66, through `pointer1`:
-        let older_sherlock: Person = todo!("Create a new version of Sherlock whose page is 66");
+        let older_sherlock: Person = pointer1.replace(Person {
+            name: "Sherlock Holmes",
+            age: 66,
+        });
 
         assert_eq!(
             original_sherlock,
@@ -750,10 +755,10 @@ mod wrapper_types {
         let pointer2 = &sherlock_ref_cell;
 
         // Use the `borrow_mut` method to change the age of Sherlock to 65, through `pointer1`:
-        todo!("Change Sherlock's age to 65");
+        pointer1.borrow_mut().age = 65;
 
         // Use the `borrow_mut` method to change the age of Sherlock to 66, through `pointer2`:
-        todo!("Change Sherlock's age to 66");
+        pointer2.borrow_mut().age = 66;
 
         assert_eq!(sherlock_ref_cell.borrow().age, 66);
     }
@@ -778,12 +783,20 @@ mod wrapper_types {
         let pointer2: &OnceCell<Person> = &sherlock_once_cell;
 
         // Use the `get_or_init` method to set the value of Sherlock to 64, through `pointer1`:
-        todo!("Create a Sherlock whose age is 64");
+        pointer1.get_or_init(|| Person {
+            name: "Sherlock Holmes".to_string(),
+            age: 64,
+        });
 
         // Use the `get_or_init` method to set the value of Sherlock to 65, through `pointer2`:
-        todo!("Create a Sherlock whose age is 65");
+        pointer2.get_or_init(|| Person {
+            name: "Sherlock Holmes".to_string(),
+            age: 65,
+        });
 
         assert_eq!(sherlock_once_cell.get().unwrap().age, 64);
+        assert_eq!(pointer1.get().unwrap().age, 64);
+        assert_eq!(pointer2.get().unwrap().age, 64);
     }
 }
 
@@ -791,7 +804,7 @@ mod wrapper_types {
 ///
 /// Lifetimes are a way to ensure that pointers (references) are valid for as long as they are
 /// used. Rust uses the concept of lifetimes even when you don't explicitly see them. However,
-/// there are many occassions when you need to explicitly specify lifetimes, and this section
+/// there are many occasions when you need to explicitly specify lifetimes, and this section
 /// will teach you how to do that.
 mod lifetimes {
     #[test]
@@ -801,7 +814,7 @@ mod lifetimes {
         }
 
         fn identity_implicit(x: &i32) -> &i32 {
-            todo!("Write the same function as identity_explicit, but without explicit lifetimes")
+            x
         }
 
         let x = 1;
@@ -811,7 +824,7 @@ mod lifetimes {
 
     #[test]
     fn lifetime_max() {
-        todo!("Try to rewrite this function to not use explicit lifetimes");
+        // Try to rewrite this function to not use explicit lifetimes
         fn max_explicit<'a>(x: &'a i32, y: &'a i32) -> &'a i32 {
             if x > y {
                 x
@@ -831,8 +844,8 @@ mod lifetimes {
         /// Refactor this from using 'static lifetime for the name to using a lifetime parameter,
         /// called `'a`, and ensure the code still compiles and passes.
         #[derive(Debug, PartialEq)]
-        struct Person {
-            name: &'static str,
+        struct Person<'a> {
+            name: &'a str,
             age: i32,
         }
 
@@ -857,7 +870,24 @@ mod lifetimes {
         }
 
         fn advance<'a>(iterator: &mut TreeIterator<'a, i32>) -> Option<&'a i32> {
-            todo!("Implement advance for TreeIterator")
+            // return the next int contained in the iterator:
+            match iterator.current {
+                Some(Tree::Leaf(x)) => {
+                    iterator.current = None;
+                    Some(x)
+                }
+                Some(Tree::Branch(left, right)) => {
+                    iterator.current = Some(left);
+                    iterator.todo.push(right);
+                    advance(iterator)
+                }
+                None => {
+                    iterator.todo.pop().map(|tree| {
+                        iterator.current = Some(tree);
+                        advance(iterator)
+                    })?
+                },
+            }
         }
 
         let tree = Tree::Branch(
@@ -877,5 +907,7 @@ mod lifetimes {
         assert_eq!(advance(&mut iterator), Some(&2));
         assert_eq!(advance(&mut iterator), Some(&3));
         assert_eq!(advance(&mut iterator), None);
+        assert_eq!(advance(&mut TreeIterator { current: None, todo: Vec::new() }), None);
+        assert_eq!(advance(&mut TreeIterator { current: Some(&Tree::Leaf(2)),  todo: Vec::new() }), Some(&2));
     }
 }
