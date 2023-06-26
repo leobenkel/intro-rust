@@ -31,10 +31,19 @@ mod basics {
             name: &'static str,
         }
 
+        impl Animal for Human {
+            fn name(&self) -> &'static str {
+                self.name
+            }
+            fn talk(&self) {
+                println!("{} says hello", self.name());
+            }
+        }
+
         // Implement the Animal trait for Human so the test can be made to pass:
         let sherlock = Human { name: "Sherlock" };
 
-        assert_eq!(todo!("sherlock.name()") as &str, "Sherlock");
+        assert_eq!(sherlock.name(), "Sherlock");
     }
 
     #[test]
@@ -48,10 +57,15 @@ mod basics {
         }
 
         // Implement the Hopper trait for Rabbit:
+        impl Hopper for Rabbit {
+            fn hop(&self) {
+                println!("{} is hopping", self.name);
+            }
+        }
 
         // Add a trait bound to the hop function so the test can be made to pass:
-        fn hop<T>(hopper: T) {
-            todo!("hopper.hop()");
+        fn hop<T: Hopper>(hopper: T) {
+            hopper.hop();
         }
 
         let rabbit = Rabbit { name: "Rabbit" };
@@ -76,8 +90,11 @@ mod basics {
         }
 
         // Use a where clause to add a trait bound to the hop function:
-        fn hop<T>(hopper: T) {
-            todo!("hopper.hop()");
+        fn hop<T>(hopper: T) -> ()
+        where
+            T: Hopper,
+        {
+            hopper.hop();
         }
 
         let rabbit = Rabbit { name: "Rabbit" };
@@ -110,8 +127,9 @@ mod basics {
         }
 
         // Use a composite trait bound so you can make the animal hop and swim:
-        fn hop_and_swim<T>(animal: T) {
-            todo!("animal.hop(); animal.swim()");
+        fn hop_and_swim<T: Hopper + Swimmer>(animal: T) {
+            animal.hop();
+            animal.swim();
         }
 
         let duck = Duck { name: "Duck" };
@@ -137,7 +155,7 @@ mod standard_traits {
         // type that implements the `ToString` trait.
         let s = 42.to_string();
 
-        assert_eq!(todo!("s") as String, "42");
+        assert_eq!(s, "42");
     }
 
     #[test]
@@ -147,8 +165,19 @@ mod standard_traits {
             age: i32,
         }
 
+        impl ToString for Person {
+            fn to_string(&self) -> String {
+                format!("{} ({})", self.name, self.age)
+            }
+        }
+
+        let person = Person {
+            name: "John".to_string(),
+            age: 42,
+        };
+
         // Implement ToString for Person so the test can be made to pass:
-        assert_eq!(todo!("person.to_string()") as String, "John (42)");
+        assert_eq!(person.to_string(), "John (42)");
     }
 
     #[test]
@@ -160,7 +189,7 @@ mod standard_traits {
         // that implements the `FromStr` trait.
         let s = "42".parse::<i32>().unwrap();
 
-        assert_eq!(todo!("s") as i32, 42);
+        assert_eq!(s, 42);
     }
 
     #[test]
@@ -170,11 +199,26 @@ mod standard_traits {
             age: i32,
         }
 
-        // Implement FromStr for Person so the test can be made to pass:
-        // let person = "John (42)".parse::<Person>().unwrap();
+        impl std::str::FromStr for Person {
+            type Err = ();
 
-        assert_eq!(todo!("person.name") as &str, "John");
-        assert_eq!(todo!("person.age") as i32, 42);
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                let mut parts = s.split(" (");
+                let name = parts.next().unwrap();
+                let age = parts.next().unwrap().trim_end_matches(')').parse().unwrap();
+
+                Ok(Person {
+                    name: name.to_string(),
+                    age,
+                })
+            }
+        }
+
+        // Implement FromStr for Person so the test can be made to pass:
+        let person = "John (42)".parse::<Person>().unwrap();
+
+        assert_eq!(person.name, "John");
+        assert_eq!(person.age, 42);
     }
 
     #[test]
@@ -187,7 +231,7 @@ mod standard_traits {
         // for types that implement the `Debug` trait.
         let s = format!("{:?}", 42);
 
-        assert_eq!(todo!("s") as String, "42");
+        assert_eq!(s, "42");
     }
 
     #[test]
@@ -204,7 +248,13 @@ mod standard_traits {
             age: 42,
         };
 
-        let fmt: String = todo!(""); // format!("{:?}", person)
+        impl std::fmt::Debug for Person {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "Person {{ name: {:?}, age: {:?} }}", self.name, self.age)
+            }
+        }
+
+        let fmt: String = format!("{:?}", person);
 
         assert_eq!(fmt, "Person { name: \"John\", age: 42 }");
     }
@@ -229,9 +279,17 @@ mod associated_types {
             amount: i32,
         }
 
+        impl Function<i32> for Add {
+            type Out = i32;
+
+            fn call(&self, input: i32) -> Self::Out {
+                input + self.amount
+            }
+        }
+
         // Implement the Function trait for Add so the test can be made to pass:
         // Note the return type of the call to `call`, which is tracked by the associated type `Out`.
-        assert_eq!(todo!("Add {{ amount: 1 }}.call(2)") as i32, 3);
+        assert_eq!(Add { amount: 1 }.call(2), 3);
     }
 }
 
@@ -290,7 +348,7 @@ mod dynamic {
         let sherlock = Human { name: "Sherlock" };
 
         // Create a dynamic trait object from the Human struct:
-        let sherlock_animal: Box<dyn Animal> = todo!("Use a box!");
+        let sherlock_animal: Box<dyn Animal> = Box::new(sherlock);
 
         assert_eq!(sherlock_animal.name(), "Sherlock");
     }
@@ -320,9 +378,29 @@ mod existential {
         {
             duck.quack()
         }
+        // Refactor this to use impl DuckLike instead of the trait bound:
+        fn make_duck_quack2(duck: impl DuckLike) -> String {
+            duck.quack()
+        }
+
+        trait Foo {}
+
+        impl Foo for Duck {}
+
+        fn make_duck_quack3(duck: impl DuckLike + Foo) -> String {
+            duck.quack()
+        }
 
         assert_eq!(
             make_duck_quack(Duck { name: "Donald" }),
+            "Donald is quacking"
+        );
+        assert_eq!(
+            make_duck_quack2(Duck { name: "Donald" }),
+            "Donald is quacking"
+        );
+        assert_eq!(
+            make_duck_quack3(Duck { name: "Donald" }),
             "Donald is quacking"
         );
     }
@@ -343,14 +421,15 @@ mod existential {
             }
         }
 
-        // Refactor this to return an existential DuckLike using `impl`:
         fn create_some_duck(name: &'static str) -> Duck {
             Duck { name }
         }
+        // Refactor this to return an existential DuckLike using `impl`:
+        fn create_some_duck2(name: &'static str) -> impl DuckLike {
+            Duck { name }
+        }
 
-        assert_eq!(
-            todo!("create_some_duck(\"Donald\").quack()") as String,
-            "Donald is quacking"
-        );
+        assert_eq!(create_some_duck("Donald").quack(), "Donald is quacking");
+        assert_eq!(create_some_duck2("Donald").quack(), "Donald is quacking");
     }
 }

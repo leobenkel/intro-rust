@@ -24,7 +24,7 @@ mod basics {
         let mut sum = 0;
 
         for i in v {
-            todo!("Add i to sum")
+            sum += i;
         }
 
         assert_eq!(sum, 6);
